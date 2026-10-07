@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Christian Life — A Faith Simulation</title>
+<style>
+  :root{
+    --cream:#faf6ee; --ink:#2b2a26; --gold:#c9a227; --gold-soft:#e8d9a0;
+    --blue:#2e4a7d; --blue-soft:#dfe7f5; --green:#4c7a4c; --red:#a04434;
+    --card:#ffffff; --muted:#7a756a; --line:#e6ded0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html{font-size:16px; -webkit-text-size-adjust:100%;}
+  body{font-family:Georgia,'Times New Roman',serif; background:var(--cream); color:var(--ink); min-height:100vh; touch-action:manipulation;}
+  #app{max-width:980px; margin:0 auto; padding:12px;}
+  h1,h2,h3{font-family:Georgia,serif;}
+  .hidden{display:none !important;}
+  button, .btn, .act, .tab, input, select, textarea{
+    touch-action:manipulation;
+    -webkit-user-select:none; user-select:none;
+    font-family:inherit;
+  }
+
+  /* ---------- Title screen ---------- */
+  #title-screen{text-align:center; padding:32px 12px 64px;}
+  #title-screen .cross{font-size:56px; color:var(--gold);}
+  #title-screen h1{font-size:40px; letter-spacing:2px; margin:6px 0 4px;}
+  #title-screen p.sub{color:var(--muted); font-style:italic; margin-bottom:20px; font-size:15px;}
+  .setup-card{background:var(--card); border:1px solid var(--line); border-radius:14px;
+    max-width:520px; margin:0 auto; padding:22px; text-align:left; box-shadow:0 6px 24px rgba(60,50,20,.08);}
+  .setup-card label{display:block; font-size:13px; margin:14px 0 4px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;}
+  .setup-card input[type=text], .setup-card input[type=number], .setup-card select, .setup-card textarea{
+    width:100%; padding:14px 14px; border:1px solid var(--line); border-radius:10px;
+    font-size:16px; font-family:inherit; background:#fffdf8; min-height:48px;
+  }
+  .setup-card textarea{min-height:96px; font-family:monospace; font-size:13px;}
+
+  /* ---------- Buttons ---------- */
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    border:none; cursor:pointer; border-radius:10px; padding:14px 22px;
+    font-size:16px; font-weight:600; min-height:48px; line-height:1.2;
+    transition:transform .05s, box-shadow .1s, background .15s;}
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--blue); color:#fff;}
+  .btn-primary:active{background:#3a5a95;}
+  .btn-gold{background:var(--gold); color:#fff;}
+  .btn-gold:active{background:#b08e1a;}
+  .btn-ghost{background:transparent; border:1.5px solid var(--line); color:var(--ink);}
+  .btn-ghost:active{background:var(--blue-soft);}
+  .btn-danger{background:var(--red); color:#fff;}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+
+  .btn-stack{display:flex; flex-direction:column; gap:10px;}
+  .btn-stack .btn{width:100%;}
+
+  /* ---------- Header ---------- */
+  header{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;
+    background:var(--blue); color:#fff; border-radius:14px 14px 0 0; padding:14px 16px;}
+  header .who{font-size:18px; font-weight:600;}
+  header .meta{font-size:12px; opacity:.9; flex:1 0 100%; order:3;}
+  header .head-actions{display:flex; gap:6px; flex-wrap:wrap;}
+  header .head-actions .btn{background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.3); padding:8px 14px; font-size:13px; min-height:40px;}
+
+  /* ---------- Stat bar ---------- */
+  #statbar{background:var(--card); border:1px solid var(--line); border-top:none; border-radius:0 0 14px 14px;
+    padding:12px 14px; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px 16px;}
+  .stat{min-width:0;}
+  .stat .row{display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px; color:var(--muted);}
+  .stat .row b{color:var(--ink);}
+  .bar{height:10px; background:var(--blue-soft); border-radius:6px; overflow:hidden;}
+  .bar i{display:block; height:100%; border-radius:6px; transition:width .3s;}
+  .money-line{grid-column:1/-1; display:flex; justify-content:space-between; align-items:center;
+    border-top:1px dashed var(--line); padding-top:8px; font-size:14px;}
+  .money-line .cash{font-size:18px; font-weight:bold; color:var(--green);}
+
+  /* ---------- Layout ---------- */
+  .cols{display:grid; grid-template-columns:1.1fr .9fr; gap:16px; margin-top:16px;}
+  @media(max-width:820px){.cols{grid-template-columns:1fr;}}
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px;}
+  .panel:last-child{margin-bottom:0;}
+  .panel h2{font-size:14px; letter-spacing:1px; text-transform:uppercase; color:var(--blue); margin-bottom:10px;
+    border-bottom:2px solid var(--gold-soft); padding-bottom:6px;}
+
+  /* ---------- Actions grid (BIG tap targets) ---------- */
+  .actions{display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px;}
+  @media(max-width:520px){.actions{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:360px){.actions{grid-template-columns:1fr;}}
+  .act{background:#fffdf8; border:1.5px solid var(--line); border-radius:12px; padding:14px 14px;
+    cursor:pointer; text-align:left; font-size:15px; line-height:1.3; min-height:64px;
+    display:flex; align-items:center; gap:10px;}
+  .act:active{box-shadow:0 0 0 2px var(--gold); background:#fff;}
+  .act:disabled{opacity:.4; cursor:not-allowed; background:#f3efe5;}
+  .act .ic{font-size:22px; flex:0 0 auto;}
+  .act .body{flex:1 1 auto; min-width:0;}
+  .act small{color:var(--muted); font-size:11px; display:block;}
+
+  /* ---------- Log ---------- */
+  #log{max-height:360px; overflow-y:auto; font-size:14px; line-height:1.5;
+    -webkit-overflow-scrolling:touch;}
+  #log p{padding:6px 0; border-bottom:1px dashed var(--line);}
+  #log .day{color:var(--muted); font-size:11px;}
+  #log .good{color:var(--green);} #log .bad{color:var(--red);} #log .grace{color:var(--blue);}
+  .verse{font-style:italic; color:var(--blue); padding:10px 14px; background:var(--blue-soft);
+    border-left:3px solid var(--gold); border-radius:6px; margin-bottom:10px; font-size:14px;}
+
+  /* ---------- Modal ---------- */
+  #overlay{position:fixed; inset:0; background:rgba(30,25,15,.55); display:flex; align-items:flex-end; justify-content:center; z-index:50; padding:0;}
+  @media(min-width:600px){#overlay{align-items:center; padding:16px;}}
+  .modal{background:var(--cream); border-radius:18px 18px 0 0; max-width:560px; width:100%; padding:22px 18px 26px; box-shadow:0 -8px 40px rgba(0,0,0,.3);
+    max-height:88vh; overflow-y:auto; -webkit-overflow-scrolling:touch; animation:slideUp .25s ease-out;}
+  @media(min-width:600px){.modal{border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.3); animation:popIn .2s ease-out;}}
+  @keyframes slideUp{from{transform:translateY(40px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  @keyframes popIn{from{transform:scale(.96); opacity:0;} to{transform:scale(1); opacity:1;}}
+  .modal h3{font-size:20px; margin-bottom:4px;}
+  .modal .tag{font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--gold); margin-bottom:10px; font-weight:600;}
+  .modal p{font-size:15px; line-height:1.55; margin-bottom:16px;}
+  .modal .choices{display:flex; flex-direction:column; gap:10px;}
+  .modal .choices .btn{text-align:left; padding:14px 16px; min-height:52px; white-space:normal;}
+  .modal .grab{width:42px; height:4px; background:var(--line); border-radius:2px; margin:0 auto 12px; display:block;}
+  @media(min-width:600px){.modal .grab{display:none;}}
+
+  /* ---------- Tabs ---------- */
+  .tabs{display:flex; gap:8px; margin-bottom:14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    padding-bottom:6px; scrollbar-width:thin;}
+  .tab{padding:10px 16px; border-radius:999px; border:1.5px solid var(--line); background:#fffdf8;
+    cursor:pointer; font-size:14px; font-weight:600; min-height:42px; white-space:nowrap; flex-shrink:0;}
+  .tab.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  th,td{text-align:left; padding:10px 6px; border-bottom:1px solid var(--line);}
+  th{color:var(--muted); font-weight:normal; text-transform:uppercase; font-size:11px; letter-spacing:1px;}
+  td .btn-sm{padding:8px 14px; font-size:13px; min-height:40px; border-radius:8px;}
+
+  .pill{font-size:11px; padding:3px 10px; border-radius:999px; background:var(--gold-soft); color:#6b5410; font-weight:600;}
+  footer{text-align:center; color:var(--muted); font-size:12px; padding:16px; font-style:italic;}
+
+  /* ---------- Toasts ---------- */
+  .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--ink); color:#fff;
+    padding:12px 22px; border-radius:999px; font-size:14px; z-index:60; box-shadow:0 6px 20px rgba(0,0,0,.3);
+    max-width:90vw; text-align:center; animation:toastIn .2s ease-out;}
+  @keyframes toastIn{from{transform:translate(-50%, 10px); opacity:0;} to{transform:translate(-50%, 0); opacity:1;}}
+
+  /* ---------- Save slot list ---------- */
+  .save-row{display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:12px; border:1.5px solid var(--line); border-radius:10px; background:#fffdf8; min-height:64px;}
+  .save-row + .save-row{margin-top:8px;}
+  .save-row.empty{color:var(--muted); font-style:italic; cursor:default;}
+  .save-info{flex:1 1 auto; min-width:0;}
+  .save-info .name{font-weight:600; font-size:15px;}
+  .save-info .meta{font-size:12px; color:var(--muted);}
+  .save-row .btn{min-height:42px; padding:8px 14px; font-size:13px;}
+
+  /* ---------- Helpers ---------- */
+  .row-actions{display:flex; gap:6px; flex-wrap:wrap;}
+
+  /* ---------- Mini-map ---------- */
+  .map-wrap{position:relative; background:linear-gradient(180deg,#f3eedb,#ece2c4);
+    border:1.5px solid var(--line); border-radius:12px; padding:6px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.5);}
+  .map-svg{width:100%; height:auto; display:block; border-radius:8px;}
+  .map-legend{display:flex; flex-wrap:wrap; gap:6px 12px; font-size:12px; color:var(--muted);
+    margin-top:8px; padding:0 4px;}
+  .map-legend span{display:inline-flex; align-items:center; gap:5px;}
+  .map-legend i{width:10px; height:10px; border-radius:50%; display:inline-block;}
+  .map-loc{padding:10px 12px; background:var(--cream); border:1px solid var(--line);
+    border-radius:10px; font-size:14px; margin-bottom:8px;}
+  .map-loc b{color:var(--blue);}
+  .map-loc small{color:var(--muted);}
+
+  /* ---------- Progression screen ---------- */
+  .path-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media(max-width:560px){.path-grid{grid-template-columns:1fr;}}
+  .path-card{background:#fffdf8; border:1.5px solid var(--line); border-radius:12px; padding:12px;}
+  .path-card h3{font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--blue);
+    margin-bottom:8px; display:flex; align-items:center; gap:6px;}
+  .timeline{position:relative; padding-left:18px; margin:6px 0 4px;}
+  .timeline::before{content:""; position:absolute; left:6px; top:4px; bottom:4px; width:2px; background:var(--gold-soft); border-radius:2px;}
+  .tl-item{position:relative; padding-bottom:8px; font-size:13px;}
+  .tl-item::before{content:""; position:absolute; left:-16px; top:5px; width:10px; height:10px;
+    border-radius:50%; background:var(--gold); border:2px solid #fff; box-shadow:0 0 0 1px var(--gold);}
+  .tl-item.current::before{background:var(--blue); box-shadow:0 0 0 1px var(--blue), 0 0 0 5px rgba(46,74,125,.18); animation:pulseDot 1.6s infinite;}
+  @keyframes pulseDot{50%{box-shadow:0 0 0 1px var(--blue), 0 0 0 9px rgba(46,74,125,0);}}
+  .tl-item small{color:var(--muted); font-size:11px; display:block;}
+  .tl-item.future::before{background:#fff; box-shadow:0 0 0 1px var(--gold-soft);}
+  .tl-item.future{color:var(--muted); font-style:italic;}
+  .fam-empty{padding:14px; text-align:center; color:var(--muted); font-style:italic; font-size:14px;}
+  .child-card{display:flex; align-items:center; gap:10px; padding:8px 10px; background:#fff;
+    border:1px solid var(--line); border-radius:8px; margin-top:6px;}
+  .child-card .avatar{font-size:24px; flex:0 0 auto;}
+  .child-card .who{flex:1 1 auto; font-size:14px;}
+  .child-card .who small{color:var(--muted); display:block; font-size:11px;}
+  .badge-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
+  .badge{font-size:11px; padding:3px 8px; border-radius:999px; background:var(--blue-soft); color:var(--blue); font-weight:600;}
+  .badge.gold{background:var(--gold-soft); color:#6b5410;}
+
+  /* Reduce padding on very small screens */
+  @media(max-width:380px){
+    #app{padding:8px;}
+    .panel{padding:12px;}
+    .verse{font-size:13px;}
+    #title-screen h1{font-size:32px;}
+    .act .ic{font-size:20px;}
+    .act{font-size:14px; padding:12px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ TITLE / NEW GAME ============ -->
+  <div id="title-screen">
+    <div class="cross">✝</div>
+    <h1>Christian Life</h1>
+    <p class="sub">A life simulation of faith, work, and grace</p>
+
+    <!-- New game form -->
+    <div id="newgame-card" class="setup-card">
+      <h3 style="margin-bottom:2px;">Begin your walk</h3>
+      <p style="font-size:13px; color:var(--muted);">Create a character, grow in faith, work honestly, love people, and finish well.</p>
+      <label for="in-name">Name</label>
+      <input type="text" id="in-name" maxlength="24" autocomplete="off" placeholder="e.g. Grace Adeyemi">
+      <label for="in-gender">Character</label>
+      <select id="in-gender">
+        <option value="She">She / Her</option>
+        <option value="He">He / Him</option>
+      </select>
+      <label for="in-church">Church home</label>
+      <select id="in-church">
+        <option value="Grace Community Church">Grace Community Church</option>
+        <option value="Living Word Assembly">Living Word Assembly</option>
+        <option value="St. Augustine's Parish">St. Augustine's Parish</option>
+        <option value="New Covenant Chapel">New Covenant Chapel</option>
+        <option value="The Well Fellowship">The Well Fellowship</option>
+      </select>
+      <label for="in-back">Your starting point</label>
+      <select id="in-back">
+        <option value="seeker">A seeker — curious about faith</option>
+        <option value="new">A new believer — baptised last year</option>
+        <option value="raised">Raised in church — finding your own faith</option>
+      </select>
+      <div class="btn-stack" style="margin-top:18px;">
+        <button class="btn btn-primary" onclick="newGame()">Start new life</button>
+        <button class="btn btn-ghost" onclick="showSavesView()">Continue saved life</button>
+        <button class="btn btn-ghost" onclick="showImportView()">Import a save code</button>
+      </div>
+    </div>
+
+    <!-- Saves view -->
+    <div id="saves-card" class="setup-card hidden">
+      <h3 style="margin-bottom:2px;">Saved lives</h3>
+      <p style="font-size:13px; color:var(--muted);">Tap a save to continue. The most recent is at the top.</p>
+      <div id="saves-list"></div>
+      <div class="btn-stack" style="margin-top:16px;">
+        <button class="btn btn-gold" onclick="showNewgameView()">Start a new life instead</button>
+      </div>
+    </div>
+
+    <!-- Import view -->
+    <div id="import-card" class="setup-card hidden">
+      <h3 style="margin-bottom:2px;">Import a save</h3>
+      <p style="font-size:13px; color:var(--muted);">Paste a save code (shared from another device, or exported earlier). Storage must be working on this device.</p>
+      <label for="import-code">Save code</label>
+      <textarea id="import-code" placeholder="Paste your save code here…"></textarea>
+      <p id="import-msg" style="font-size:13px; margin-top:8px;"></p>
+      <div class="btn-stack" style="margin-top:14px;">
+        <button class="btn btn-primary" onclick="importSave()">Import and play</button>
+        <button class="btn btn-ghost" onclick="showNewgameView()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ GAME ============ -->
+  <div id="game" class="hidden">
+    <header>
+      <div class="who" id="h-name">—</div>
+      <div class="meta" id="h-meta">—</div>
+      <div class="head-actions">
+        <button class="btn" onclick="openSavePanel()">💾 Save</button>
+        <button class="btn" onclick="openLoadPanel()">📂 Load</button>
+        <button class="btn" onclick="resetGame()">⟲ New</button>
+      </div>
+    </header>
+
+    <div id="statbar"></div>
+
+    <div class="cols">
+      <div class="col-left">
+        <div class="panel">
+          <h2>Today's choice</h2>
+          <div class="verse" id="verse-box">—</div>
+          <div class="actions" id="actions"></div>
+          <p style="font-size:12px; color:var(--muted); margin-top:10px;">Each action advances one day. Rest restores energy. A new month brings salary, rent, and a fresh page.</p>
+        </div>
+
+        <div class="panel">
+          <h2>Life</h2>
+          <div class="tabs">
+            <button class="tab active" data-tab="work" onclick="showTab('work')">Work</button>
+            <button class="tab" data-tab="home" onclick="showTab('home')">Home</button>
+            <button class="tab" data-tab="people" onclick="showTab('people')">Fellowship</button>
+            <button class="tab" data-tab="walk" onclick="showTab('walk')">Your walk</button>
+            <button class="tab" data-tab="map" onclick="showTab('map')">Map</button>
+            <button class="tab" data-tab="path" onclick="showTab('path')">Path</button>
+          </div>
+          <div id="tab-work"></div>
+          <div id="tab-home" class="hidden"></div>
+          <div id="tab-people" class="hidden"></div>
+          <div id="tab-walk" class="hidden"></div>
+          <div id="tab-map" class="hidden"></div>
+          <div id="tab-path" class="hidden"></div>
+        </div>
+      </div>
+
+      <div class="col-right">
+        <div class="panel">
+          <h2>Journal</h2>
+          <div id="log"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="overlay" class="hidden" onclick="if(event.target===this) closeModal();"></div>
+<div id="saves-overlay" class="hidden" onclick="if(event.target===this) closeSaveLoadPanel();"><div id="saves-modal-body"></div></div>
+
+<footer>“Whatever you do, work at it with all your heart” — Col 3:23 · Christian Life v1.1</footer>
+
+<script>
+"use strict";
+let S = null;
+const $ = id => document.getElementById(id);
+const clamp = (v,a=0,b=100) => Math.max(a, Math.min(b, v));
+const rnd = a => a[Math.floor(Math.random()*a.length)];
+const SAVE_VERSION = 1;
+const MAX_SLOTS = 3;
+const SAVE_PREFIX = "christianLifeSave_v1_";
+const META_KEY = "christianLifeSave_v1_meta";
+const memoryFallback = {}; // used when localStorage is unavailable
+
+/* ================= DATA ================= */
+const VERSES = [
+  ["Trust in the LORD with all your heart…", "Prov 3:5"],
+  ["The LORD is my shepherd; I shall not want.", "Ps 23:1"],
+  ["Let us not become weary in doing good.", "Gal 6:9"],
+  ["Your word is a lamp to my feet.", "Ps 119:105"],
+  ["Rejoice in the Lord always.", "Phil 4:4"],
+  ["Cast all your anxiety on Him, because He cares for you.", "1 Pet 5:7"],
+  ["Love your neighbour as yourself.", "Mark 12:31"],
+  ["Be still, and know that I am God.", "Ps 46:10"],
+  ["I can do all things through Christ who strengthens me.", "Phil 4:13"],
+  ["The joy of the LORD is your strength.", "Neh 8:10"]
+];
+
+const STAGES = [
+  {min:0,   name:"Wandering"},
+  {min:15,  name:"Seeker"},
+  {min:35,  name:"New Believer"},
+  {min:55,  name:"Baptised & Rooted"},
+  {min:75,  name:"Growing Disciple"},
+  {min:90,  name:"Servant Leader"},
+  {min:115, name:"Mature Saint"}
+];
+
+const JOBS = [
+  {id:"barista", title:"Café Barista", salary:1400, edu:"—", energy:22},
+  {id:"driver",  title:"Delivery Driver", salary:1800, edu:"—", energy:28},
+  {id:"teacher", title:"Teaching Assistant", salary:2000, edu:"Some study", energy:24},
+  {id:"nurse",   title:"Nurse", salary:3200, edu:"Degree", energy:30},
+  {id:"dev",     title:"Junior Developer", salary:3600, edu:"Bootcamp", energy:26},
+  {id:"worship", title:"Church Music Director", salary:1600, edu:"Skill & calling", energy:20, minFaith:60}
+];
+
+const HOMES = [
+  {id:"shared", name:"Shared apartment", rent:450,  joy:0},
+  {id:"studio", name:"Small studio", rent:750,  joy:2},
+  {id:"oneb",   name:"One-bedroom flat", rent:1100, joy:4},
+  {id:"house",  name:"House with a garden", rent:1800, joy:7}
+];
+
+const EVENTS = [
+  {id:"gossip", tag:"Temptation", title:"Lunchroom gossip",
+   t:"Coworkers are tearing into a colleague who isn't there. They turn to you, waiting for your line.",
+   ch:[
+     {label:"Change the subject kindly", res:"The moment passes. Something in you feels steadier.", fx:{faith:3, community:-1, peace:2}},
+     {label:"Join in — everyone does", res:"It felt easy. Later it sits heavily on your heart.", fx:{faith:-4, joy:-2, community:2}},
+     {label:"Stay quiet and pray for them", res:"You say nothing, but you carry it to God.", fx:{faith:2, peace:1, energy:-2}}
+   ]},
+  {id:"wallet", tag:"Integrity", title:"The extra change",
+   t:"A shopkeeper hands you change for a larger note than you gave. Nobody would ever know.",
+   ch:[
+     {label:"Return it", res:"“Honest scales.” You walk out lighter than the coins.", fx:{faith:4, joy:1}},
+     {label:"Keep it", res:"Small money, small crack in the conscience.", fx:{money:15, faith:-3, joy:-1}}
+   ]},
+  {id:"stranger", tag:"Opportunity", title:"A stranger at the bus stop",
+   t:"Someone beside you looks like the day has beaten them. You feel a nudge in your spirit.",
+   ch:[
+     {label:"Buy them a meal and listen", res:"They talk for twenty minutes. You mostly listen. You exchange a warm goodbye.", fx:{money:-12, joy:4, faith:4, community:2}},
+     {label:"Offer a kind word", res:"A short blessing, received like water in a dry place.", fx:{faith:2, joy:1}},
+     {label:"Look at your phone", res:"The bus comes. The moment goes.", fx:{faith:-1}}
+   ]},
+  {id:"overtime", tag:"Work", title:"Weekend shift",
+   t:"Your boss begs you to cover a weekend shift. But it's also when your small group meets.",
+   ch:[
+     {label:"Take the shift", res:"Extra pay, missed fellowship.", fx:{money:90, energy:-12, community:-3, joy:-1}},
+     {label:"Keep the commitment", res:"You worship with your people. Riches aren't everything.", fx:{faith:2, community:3, joy:2}}
+   ]},
+  {id:"anxiety", tag:"Struggle", title:"3 a.m. worry",
+   t:"Money, work, the future — the thoughts circle like it's daytime. You can't sleep.",
+   ch:[
+     {label:"Get up and pray it out", res:"Nothing changes by morning — except you.", fx:{faith:4, peace:3, energy:-4}},
+     {label:"Scroll until numb", res:"Dawn arrives. The worry is still there, and now your eyes hurt.", fx:{energy:-8, joy:-2, peace:-2}},
+     {label:"Write a gratitude list", res:"Ten lines later, the night is not so heavy.", fx:{joy:3, peace:2}}
+   ]},
+  {id:"raise", tag:"Blessing", title:"A good report",
+   t:"Your diligence has been noticed. A pay review lands on your desk.",
+   ch:[
+     {label:"Celebrate and give thanks", res:"Every good gift… You tithed on the increase.", fx:{money:180, faith:2, joy:3}},
+     {label:"Celebrate — big", res:"A generous night out. You deserved it, mostly.", fx:{money:60, joy:4}}
+   ]},
+  {id:"car", tag:"Trial", title:"The car dies",
+   t:"It sighs, rattles, and gives up on the roadside. The mechanic is not gentle with the estimate.",
+   ch:[
+     {label:"Repair it properly", res:"Painful, but wheels again.", fx:{money:-350, joy:-2}},
+     {label:"Patch it and pray", res:"It runs… mostly. A testament to mercy and duct tape.", fx:{money:-90, faith:1, joy:-1}}
+   ]},
+  {id:"sick", tag:"Trial", title:"Down with fever",
+   t:"Your body demands a pause. The world will have to spin without you a few days.",
+   fxOnly:{energy:-20, health:-10, joy:-2, days:3}},
+  {id:"visitor", tag:"Church", title:"A newcomer at church",
+   t:"You notice someone alone after the service, holding their coat like a shield.",
+   ch:[
+     {label:"Welcome them to lunch", res:"They came back next week — and brought a friend.", fx:{community:4, joy:2, money:-15, faith:2}},
+     {label:"Smile and greet them", res:"A seed planted, small but real.", fx:{community:1, faith:1}}
+   ]},
+  {id:"media", tag:"Temptation", title:"Late-night rabbit hole",
+   t:"One more episode. One more scroll. The glow says one hour; the clock says three.",
+   ch:[
+     {label:"Put the phone down", res:"Sleep like a settled child.", fx:{energy:4, peace:2, faith:1}},
+     {label:"One more…", res:"You wake up foggy and oddly hungry for something you can't name.", fx:{energy:-10, joy:-1, faith:-2}}
+   ]},
+  {id:"mentor", tag:"Growth", title:"An older saint",
+   t:"A grey-haired member of your church offers to read the Bible with you weekly.",
+   ch:[
+     {label:"Accept — walk with them", res:"Their stories are theology with wrinkles. You grow fast.", fx:{faith:5, knowledge:5, community:2}},
+     {label:"Politely decline", res:"Maybe when life is less busy. (It never is.)", fx:{faith:-1}}
+   ]},
+  {id:"tough", tag:"Trial", title:"A hard season",
+   t:"News from home knocks the wind out of you. Prayers feel like they hit the ceiling.",
+   ch:[
+     {label:"Keep praying anyway", res:"The ceiling opens. Not answers — presence. It's enough.", fx:{faith:6, peace:2, joy:-1}},
+     {label:"Pull away for a while", res:"You skip church two weeks. The silence gets used to you.", fx:{faith:-5, community:-3, joy:-2}}
+   ]},
+  {id:"bonus", tag:"Blessing", title:"Unexpected gift",
+   t:"An envelope appears — a relative remembered you, or a refund you'd forgotten.",
+   ch:[
+     {label:"Give a portion first", res:"“Honour the Lord with your wealth.” The rest goes further than it should.", fx:{money:120, faith:4, joy:2}},
+     {label:"Keep it all", res:"A pleasant day. Gone by the month's end.", fx:{money:200, joy:1}}
+   ]},
+  {id:"friend", tag:"Relationship", title:"Coffee with a friend who drifted",
+   t:"An old friend, far from church, asks to meet. “You're still into all that, right?”",
+   ch:[
+     {label:"Listen without a sermon", res:"Two hours, much laughter, one honest question you'll keep praying over.", fx:{community:3, faith:2, joy:2, money:-8}},
+     {label:"Lecture them gently… at length", res:"They nod. The texts stop coming.", fx:{community:-4, faith:1, joy:-1}}
+   ]},
+  {id:"serve", tag:"Service", title:"The food bank needs hands",
+   t:"Saturday. Boxes of tins and a queue of neighbours. Your sofa votes no.",
+   ch:[
+     {label:"Go and serve", res:"Sore back, full heart.", fx:{faith:3, community:4, joy:3, energy:-10}},
+     {label:"Rest instead", res:"Rest is also holy. Today, though, the boxes went unlifted.", fx:{energy:6, faith:-1}}
+   ]},
+  {id:"mediocre", tag:"Integrity", title:"The shortcut",
+   t:"A coworker shows you a trick: fudge the numbers, ship it sloppy, nobody checks.",
+   ch:[
+     {label:"Do it right, even slowly", res:"Slower. Cleaner. You sleep at night.", fx:{faith:3, peace:2, money:-20}},
+     {label:"Take the shortcut", res:"Faster. For now, a small whisper you'll keep silencing.", fx:{money:70, faith:-3, joy:-1}}
+   ]},
+  {id:"pray41", tag:"Growth", title:"The 5 a.m. nudge",
+   t:"You wake before the alarm with an unusual stillness. The house is quiet; God is not.",
+   ch:[
+     {label:"Rise and pray", res:"The best hour of your month.", fx:{faith:5, peace:3, energy:-3}},
+     {label:"Snooze", res:"Grace covers it. But the moment was special.", fx:{faith:-1}}
+   ]},
+  {id:"envy", tag:"Temptation", title:"Comparison trap",
+   t:"A friend posts a new car, a new flat, a new life. Your thumb hovers between envy and gratitude.",
+   ch:[
+     {label:"Thank God for your own story", res:"Contentment — the rarest wealth.", fx:{faith:3, joy:3, peace:2}},
+     {label:"Scroll and stew", res:"An hour of measuring your insides by their outsides.", fx:{joy:-4, peace:-3, faith:-2}}
+   ]},
+  {id:"ask_pray", tag:"Church", title:"“Will you pray for me?”",
+   t:"A young believer texts you — first time they've ever asked. They're in a mess.",
+   ch:[
+     {label:"Call and pray together", res:"You fumble for words; God doesn't. Both of you leave changed.", fx:{faith:5, community:3, joy:2}},
+     {label:"Send a verse and a prayer emoji", res:"Something is better than nothing. Barely.", fx:{faith:1, community:1}}
+   ]},
+  {id:"restless", tag:"Struggle", title:"The grey day",
+   t:"Nothing is wrong. Nothing is right. Motivation has gone on sabbatical.",
+   ch:[
+     {label:"Take a worship walk", res:"Sky above, hymns in your ears, fog lifting.", fx:{joy:4, faith:2, health:2, energy:2}},
+     {label:"Stay in bed", res:"Rest — but the grey follows you there.", fx:{joy:-2, energy:3}}
+   ]}
+];
+
+/* ================= STATE ================= */
+function newState(name, gender, church, back){
+  const base = back==="seeker" ? {faith:12, knowledge:4, joy:55}
+    : back==="new" ? {faith:30, knowledge:14, joy:65}
+    : {faith:22, knowledge:20, joy:50};
+  return {
+    name, gender, church, back,
+    day:1, age:24, yearAge:0,
+    faith:base.faith, knowledge:base.knowledge, joy:base.joy,
+    peace:40, health:80, energy:80,
+    money:600, community:15, serviceHours:0, streak:0,
+    job:null, shifts:0, home:"shared", education:"None",
+    firedFlags:0, seenEvents:[], doneEventIds:[],
+    log:[], lastMonth:0, salvBadge: back!=="seeker",
+    // v1.2 — progression fields (older saves get these added on load)
+    location: "home",
+    careerHistory: [],   // [{jobId, title, salary, hiredDay}]
+    totalEarned: 0,
+    spouse: null,        // {name, sinceDay} or null
+    children: [],        // [{name, bornDay, gender}]
+    marriageProposed: false,
+    familyMeetingDay: 0,
+  };
+}
+
+/* ============ BACKWARD-COMPAT NORMALIZER ============ */
+/* Called after every load (slot, import, dev test) so old v1.1 saves
+   transparently gain the v1.2 fields without breaking. */
+function ensureV12(s){
+  if(!s) return s;
+  if(!("location" in s))          s.location = "home";
+  if(!Array.isArray(s.careerHistory)) s.careerHistory = s.job
+    ? [{jobId:s.job, title: (JOBS.find(j=>j.id===s.job)||{title:"Worker"}).title,
+       salary: (JOBS.find(j=>j.id===s.job)||{salary:0}).salary,
+       hiredDay: Math.max(1, (s.day||1) - Math.floor((s.shifts||0)/22)*30)}]
+    : [];
+  if(!("totalEarned" in s))       s.totalEarned = Math.max(0, Math.floor((s.money||0) + (s.shifts||0)*50));
+  if(!("spouse" in s))            s.spouse = null;
+  if(!Array.isArray(s.children))  s.children = [];
+  if(!("marriageProposed" in s))  s.marriageProposed = false;
+  if(!("familyMeetingDay" in s))  s.familyMeetingDay = 0;
+  if(!("education" in s) || s.education === "—") s.education = "None";
+  // Make sure everyone has at least one history entry if they currently hold a job
+  if(s.job){
+    const exists = s.careerHistory.some(c=>c.jobId===s.job);
+    if(!exists){
+      const j = JOBS.find(x=>x.id===s.job) || {title:"Worker", salary:0};
+      s.careerHistory.push({jobId:s.job, title:j.title, salary:j.salary, hiredDay:Math.max(1, (s.day||1)-30)});
+    }
+  }
+  return s;
+}
+
+/* Determine "current location" from the most recent activities.
+   Updated whenever the player takes an action. */
+function updateLocation(){
+  const last = (S.log && S.log[0]) || null;
+  if(!last) { S.location = "home"; return; }
+  const t = (last.t||"").toLowerCase();
+  if(/worship|sunday|church|small group/.test(t)) S.location = "church";
+  else if(/work|shift|promotion|salary|job/.test(t)) S.location = "work";
+  else if(/fellowship|friend|coffee|lunch|community/.test(t)) S.location = "fellowship";
+  else if(/served|food bank|bus stop|stranger/.test(t)) S.location = "out";
+  else if(/rested|exercised|leisure|home|moved/.test(t)) S.location = "home";
+}
+
+/* ================= STORAGE LAYER ================= */
+function storageAvailable(){
+  try{
+    const k = "__test_" + Math.random();
+    localStorage.setItem(k, "1");
+    localStorage.removeItem(k);
+    return true;
+  }catch(e){ return false; }
+}
+const HAS_LS = storageAvailable();
+
+function lsGet(key){
+  try{ return HAS_LS ? localStorage.getItem(key) : (memoryFallback[key] || null); }
+  catch(e){ return memoryFallback[key] || null; }
+}
+function lsSet(key, val){
+  try{
+    if(HAS_LS){ localStorage.setItem(key, val); return true; }
+  }catch(e){ /* fall through */ }
+  memoryFallback[key] = val;
+  return false;
+}
+function lsRemove(key){
+  try{ if(HAS_LS) localStorage.removeItem(key); }catch(e){}
+  delete memoryFallback[key];
+}
+
+function packSave(state, slot){
+  return {
+    v: SAVE_VERSION,
+    slot: slot,
+    savedAt: Date.now(),
+    state: state
+  };
+}
+function unpackSave(obj){
+  if(!obj || obj.v !== SAVE_VERSION) return null;
+  return obj.state;
+}
+
+function listSaves(){
+  const out = [];
+  for(let i=1; i<=MAX_SLOTS; i++){
+    const raw = lsGet(SAVE_PREFIX + "slot" + i);
+    if(!raw) continue;
+    try{
+      const parsed = JSON.parse(raw);
+      out.push({slot:i, savedAt:parsed.savedAt, state:parsed.state, raw:raw});
+    }catch(e){ /* skip corrupted */ }
+  }
+  out.sort((a,b) => b.savedAt - a.savedAt);
+  return out;
+}
+
+function writeToSlot(state, slot){
+  const pack = packSave(state, slot);
+  const ok = lsSet(SAVE_PREFIX + "slot" + slot, JSON.stringify(pack));
+  // meta: which slot is currently active + last save timestamp
+  lsSet(META_KEY, JSON.stringify({activeSlot: slot, lastSavedAt: pack.savedAt}));
+  return ok;
+}
+
+function readFromSlot(slot){
+  const raw = lsGet(SAVE_PREFIX + "slot" + slot);
+  if(!raw) return null;
+  try{
+    const parsed = JSON.parse(raw);
+    return unpackSave(parsed);
+  }catch(e){ return null; }
+}
+
+/* Export → base64 code (URL-safe) so it survives copy/paste and cross-device sharing. */
+function exportCode(){
+  // Export current state, packed with version
+  const pack = packSave(S, S.__activeSlot || 0);
+  const json = JSON.stringify(pack);
+  // Unicode-safe base64
+  const b64 = btoa(unescape(encodeURIComponent(json)));
+  return "CL1-" + b64;
+}
+function importCode(code){
+  if(!code) return null;
+  code = code.trim();
+  if(code.startsWith("CL1-")) code = code.slice(4);
+  try{
+    const json = decodeURIComponent(escape(atob(code)));
+    const parsed = JSON.parse(json);
+    return unpackSave(parsed);
+  }catch(e){ console.error("import failed", e); return null; }
+}
+
+/* Round-trip validation used for save/load and quick tests */
+function validateState(s){
+  if(!s || typeof s !== "object") return false;
+  const required = ["name","day","faith","joy","money"];
+  for(const k of required) if(!(k in s)) return false;
+  return true;
+}
+
+/* ============ AUTOSAVE / SAVE FLOW ============ */
+function autoSave(){
+  // finds the next free slot, or recycles the oldest active slot
+  const saves = listSaves();
+  let target;
+  if(saves.length < MAX_SLOTS){
+    const used = new Set(saves.map(s=>s.slot));
+    for(let i=1; i<=MAX_SLOTS; i++) if(!used.has(i)){ target = i; break; }
+  } else {
+    saves.sort((a,b)=>a.savedAt-b.savedAt);
+    target = saves[0].slot;
+  }
+  writeToSlot(S, target);
+  return target;
+}
+function saveGame(options){
+  options = options || {};
+  if(!S) return;
+  const slot = options.slot || autoSave();
+  writeToSlot(S, slot);
+  S.__activeSlot = slot;
+  if(options.toast !== false) toast("Saved to slot " + slot + " ✝");
+  return slot;
+}
+function loadGame(slot){
+  const state = readFromSlot(slot);
+  if(!state){ toast("Slot " + slot + " is empty."); return false; }
+  if(!validateState(state)){ toast("Save is corrupted."); return false; }
+  S = ensureV12(state);
+  S.__activeSlot = slot;
+  closeAllOverlays();
+  $("title-screen").classList.add("hidden");
+  $("game").classList.remove("hidden");
+  renderAll();
+  toast("Welcome back, " + S.name + " (slot " + slot + ")");
+  return true;
+}
+function resetGame(){
+  if(!confirm("Start a brand new life? Your current life will be removed from this slot.")) return;
+  // Remove all saves — fresh page
+  for(let i=1; i<=MAX_SLOTS; i++) lsRemove(SAVE_PREFIX + "slot" + i);
+  lsRemove(META_KEY);
+  location.reload();
+}
+
+/* ============ SAVE / LOAD PANELS ============ */
+function openSavePanel(){
+  // Save current to slot chosen, or auto if none specified
+  renderSaveLoadModal("save");
+}
+function openLoadPanel(){
+  renderSaveLoadModal("load");
+}
+function renderSaveLoadModal(mode){
+  const saves = listSaves();
+  const used = new Set(saves.map(s=>s.slot));
+  const ov = $("saves-overlay");
+  const body = $("saves-modal-body");
+  const title = mode==="save" ? "Save your life" : "Continue a saved life";
+  const intro = mode==="save"
+    ? "Pick a slot — your progress will be written there. Export to a copy-paste code if you want to back it up or move it to another device."
+    : "Pick a slot to load. Each slot keeps one save; loading will replace what's currently running.";
+
+  let slotsHtml = "";
+  for(let i=1; i<=MAX_SLOTS; i++){
+    const s = saves.find(x=>x.slot===i);
+    if(s){
+      const meta = describeState(s.state);
+      slotsHtml += `<div class="save-row">
+          <div class="save-info">
+            <div class="name">${escapeHtml(s.state.name)} <small class="pill">Slot ${i}</small></div>
+            <div class="meta">${meta} · saved ${timeAgo(s.savedAt)}</div>
+          </div>
+          <div class="row-actions">
+            ${mode==="save"
+              ? `<button class="btn btn-gold btn-sm" onclick="doSaveSlot(${i})">Overwrite</button>
+                 <button class="btn btn-ghost btn-sm" onclick="quickLoadSlot(${i})">Load</button>`
+              : `<button class="btn btn-primary btn-sm" onclick="quickLoadSlot(${i})">Load</button>`}
+          </div>
+        </div>`;
+    } else {
+      slotsHtml += `<div class="save-row empty">
+          <div class="save-info"><div class="name">Slot ${i} — empty</div>
+            <div class="meta">Nothing here yet.</div></div>
+          ${mode==="save"
+            ? `<button class="btn btn-gold btn-sm" onclick="doSaveSlot(${i})">Save here</button>`
+            : `<button class="btn btn-ghost btn-sm" disabled>—</button>`}
+        </div>`;
+    }
+  }
+
+  body.innerHTML = `<div class="modal" style="border-radius:16px;">
+      <div class="tag">${mode==="save"?"Save":"Load"}</div>
+      <h3>${title}</h3>
+      <p style="font-size:14px; color:var(--muted);">${intro}</p>
+      ${slotsHtml}
+      <hr style="border:none; border-top:1px dashed var(--line); margin:14px 0;">
+      <h4 style="font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--blue); margin-bottom:8px;">Backup & restore</h4>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:8px;">Storage only works on this device. Use <b>Export</b> to copy a save code you can paste anywhere.</p>
+      <div class="btn-stack">
+        <button class="btn btn-primary" onclick="doExport()">📤 Export save code</button>
+        <button class="btn btn-ghost" onclick="showImportFromGame()">📥 Import a save code</button>
+        <button class="btn btn-ghost" onclick="closeSaveLoadPanel()">Close</button>
+      </div>
+      <div id="export-area" class="hidden" style="margin-top:12px;">
+        <label for="export-code" style="display:block; font-size:13px; margin:6px 0; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Your save code</label>
+        <textarea id="export-code" readonly style="width:100%; min-height:80px; padding:10px; border:1px solid var(--line); border-radius:8px; font-family:monospace; font-size:12px; word-break:break-all;"></textarea>
+        <div class="btn-stack" style="margin-top:10px;">
+          <button class="btn btn-gold" onclick="copyExportCode()">Copy to clipboard</button>
+        </div>
+      </div>
+      ${!HAS_LS ? `<p style="font-size:12px; color:var(--red); margin-top:10px;">⚠ Browser storage unavailable on this device. Use Export to back up — the in-memory copy will be lost if you close the tab.</p>` : ""}
+    </div>`;
+  ov.classList.remove("hidden");
+}
+function closeSaveLoadPanel(){ $("saves-overlay").classList.add("hidden"); }
+function closeAllOverlays(){
+  $("overlay").classList.add("hidden"); $("overlay").innerHTML="";
+  $("saves-overlay").classList.add("hidden");
+}
+
+function doSaveSlot(slot){
+  if(!S){ toast("No life to save yet."); return; }
+  writeToSlot(S, slot);
+  S.__activeSlot = slot;
+  toast("Saved to slot " + slot + " ✝");
+  renderSaveLoadModal("save");
+  renderAll();
+}
+function quickLoadSlot(slot){
+  loadGame(slot);
+}
+function doExport(){
+  if(!S){ toast("No life to export yet."); return; }
+  const code = exportCode();
+  const area = $("export-area");
+  area.classList.remove("hidden");
+  $("export-code").value = code;
+  $("export-code").focus();
+  $("export-code").select();
+}
+function copyExportCode(){
+  const t = $("export-code");
+  t.select();
+  let ok = false;
+  try{ ok = document.execCommand("copy"); }catch(e){}
+  if(!ok && navigator.clipboard){
+    navigator.clipboard.writeText(t.value).then(()=>toast("Copied ✓"));
+  } else if(ok){
+    toast("Copied ✓");
+  } else {
+    toast("Press & hold the code to copy");
+  }
+}
+function showImportFromGame(){
+  closeSaveLoadPanel();
+  // Open in-game import modal
+  const ov = $("overlay");
+  ov.innerHTML = `<div class="modal">
+      <span class="grab"></span>
+      <div class="tag">Import</div>
+      <h3>Import a save code</h3>
+      <p style="font-size:14px; color:var(--muted);">Paste a save code to continue a life from another device.</p>
+      <textarea id="game-import" placeholder="Paste your save code here…" style="width:100%; min-height:120px; padding:12px; border:1px solid var(--line); border-radius:10px; font-family:monospace; font-size:13px;"></textarea>
+      <p id="game-import-msg" style="font-size:13px; margin:8px 0 0;"></p>
+      <div class="btn-stack" style="margin-top:14px;">
+        <button class="btn btn-primary" onclick="doGameImport()">Import and play</button>
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>`;
+  ov.classList.remove("hidden");
+}
+function doGameImport(){
+  const ta = $("game-import");
+  const msg = $("game-import-msg");
+  const state = importCode(ta.value);
+  if(!state){ msg.innerHTML = '<span style="color:var(--red)">That code doesn\'t look right.</span>'; return; }
+  if(!validateState(state)){ msg.innerHTML = '<span style="color:var(--red)">Save data is invalid.</span>'; return; }
+  S = ensureV12(state);
+  // save to first free slot
+  const slot = autoSave();
+  S.__activeSlot = slot;
+  closeModal();
+  $("title-screen").classList.add("hidden");
+  $("game").classList.remove("hidden");
+  renderAll();
+  toast("Imported and saved as slot " + slot);
+}
+
+/* ============ TITLE SCREEN VIEWS ============ */
+function showNewgameView(){
+  $("newgame-card").classList.remove("hidden");
+  $("saves-card").classList.add("hidden");
+  $("import-card").classList.add("hidden");
+}
+function showSavesView(){
+  renderSavesList();
+  $("newgame-card").classList.add("hidden");
+  $("saves-card").classList.remove("hidden");
+  $("import-card").classList.add("hidden");
+}
+function showImportView(){
+  $("newgame-card").classList.add("hidden");
+  $("saves-card").classList.add("hidden");
+  $("import-card").classList.remove("hidden");
+  $("import-msg").textContent = "";
+}
+function renderSavesList(){
+  const saves = listSaves();
+  const list = $("saves-list");
+  if(!saves.length){
+    list.innerHTML = `<div class="save-row empty"><div class="save-info"><div class="name">No saved lives on this device.</div>
+        <div class="meta">Storage may be disabled — consider Import instead.</div></div></div>`;
+    return;
+  }
+  list.innerHTML = saves.map(s=>{
+    const meta = describeState(s.state);
+    return `<div class="save-row">
+        <div class="save-info">
+          <div class="name">${escapeHtml(s.state.name)} <small class="pill">Slot ${s.slot}</small></div>
+          <div class="meta">${meta} · saved ${timeAgo(s.savedAt)}</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn btn-primary btn-sm" onclick="quickLoadSlot(${s.slot})">Continue</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteSlot(${s.slot})">Delete</button>
+        </div>
+      </div>`;
+  }).join("");
+}
+function deleteSlot(slot){
+  if(!confirm("Delete save in slot " + slot + "?")) return;
+  lsRemove(SAVE_PREFIX + "slot" + slot);
+  renderSavesList();
+  toast("Slot " + slot + " deleted");
+}
+function importSave(){
+  const code = $("import-code").value;
+  const msg = $("import-msg");
+  const state = importCode(code);
+  if(!state){ msg.innerHTML = '<span style="color:var(--red)">That code doesn\'t look right.</span>'; return; }
+  if(!validateState(state)){ msg.innerHTML = '<span style="color:var(--red)">Save data is invalid.</span>'; return; }
+  S = ensureV12(state);
+  const slot = autoSave();
+  S.__activeSlot = slot;
+  $("title-screen").classList.add("hidden");
+  $("game").classList.remove("hidden");
+  renderAll();
+  toast("Imported and saved as slot " + slot);
+}
+
+/* ============ HELPERS ============ */
+function describeState(s){
+  const j = s.job ? JOBS.find(x=>x.id===s.job).title : "no job";
+  const h = HOMES.find(x=>x.id===s.home).name.toLowerCase();
+  return `Day ${s.day} · age ${s.age} · ${s.church} · ${j}, ${h}`;
+}
+function timeAgo(ts){
+  const d = (Date.now() - ts) / 1000;
+  if(d < 60) return "just now";
+  if(d < 3600) return Math.floor(d/60) + "m ago";
+  if(d < 86400) return Math.floor(d/3600) + "h ago";
+  if(d < 86400*30) return Math.floor(d/86400) + "d ago";
+  return new Date(ts).toLocaleDateString();
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ============ NEW GAME ============ */
+function newGame(){
+  const name = $("in-name").value.trim() || "A. Believer";
+  S = newState(name, $("in-gender").value, $("in-church").value, $("in-back").value);
+  $("title-screen").classList.add("hidden");
+  $("game").classList.remove("hidden");
+  addLog("Your story begins. " + S.name + ", " + S.age + ", moves into a shared apartment with little money and an open heart.", "grace");
+  addLog("First stop: " + S.church + ". Sunday is a good place to start.", "");
+  renderAll();
+  autoSave();
+  // Schedule the family events (visible from the Progression tab)
+  scheduleStoryEvents();
+}
+
+/* ============ STORY EVENTS (marriage / children) ============ */
+/* These progress pulses trigger only when conditions are met, so they
+   don't feel forced. Each one enriches the Family card on the Progression tab. */
+const SPOUSE_POOL_M = ["Daniel","Samuel","David","Joel","Tunde","Kofi","Emmanuel","Aaron"];
+const SPOUSE_POOL_F = ["Grace","Hannah","Esther","Amara","Mary","Naomi","Sarah","Ruth"];
+const CHILD_NAMES = ["Hope","Joy","Faith","Daniel","Esther","Peace","Zoe","Elijah"];
+function spouseName(){
+  return S.gender==="She" ? rnd(SPOUSE_POOL_M) : rnd(SPOUSE_POOL_F);
+}
+function scheduleStoryEvents(){
+  // Browse and fire qualifying beats; capped to one per beat-eval call so the log isn't spammed.
+  if(!S) return;
+  // Engaged / Married beat
+  if(S.faith >= 60 && S.community >= 35 && S.money >= 1500 && !S.marriageProposed && !S.spouse){
+    S.marriageProposed = true;
+    const name = spouseName();
+    addLog("A friend from " + S.church + " named " + name + " has been asking about you in a way that isn't casual.", "grace");
+    S.familyMeetingDay = S.day;
+  }
+  if(S.marriageProposed && !S.spouse && S.day - S.familyMeetingDay >= 14){
+    const name = spouseName();
+    S.spouse = {name, sinceDay: S.day};
+    S.joy = clamp(S.joy+12); S.community = clamp(S.community+5);
+    addLog("You're married to " + name + ". Small wedding, loud joy. Family begins.","good");
+  }
+  // First child — between day 60 and day 365 in marriage
+  if(S.spouse && S.children.length === 0 && (S.day - S.spouse.sinceDay) >= 60 && (S.day - S.spouse.sinceDay) <= 365){
+    if(Math.random() < 0.5){
+      const name = rnd(CHILD_NAMES);
+      S.children.push({name, bornDay: S.day,
+        gender: Math.random()<0.5 ? "daughter" : "son"});
+      S.joy = clamp(S.joy+15); S.community = clamp(S.community+3);
+      addLog("A small cry announces a new member of the household — " + name + ", a " + S.children[0].gender + ".","good");
+    }
+  }
+  // Subsequent children — every 200–400 in-marriage days, low chance per month
+  if(S.spouse && (S.day - S.spouse.sinceDay) > 200 && S.children.length < 3){
+    const last = S.children[S.children.length-1];
+    const gapOk = !last || (S.day - last.bornDay) >= 180;
+    if(gapOk && Math.random() < 0.04){
+      const name = rnd(CHILD_NAMES);
+      S.children.push({name, bornDay: S.day,
+        gender: Math.random()<0.5 ? "daughter" : "son"});
+      S.joy = clamp(S.joy+8);
+      addLog(name + " joins the family — louder house, fuller prayers.","good");
+    }
+  }
+}
+
+/* ============ CORE LOOP ============ */
+function doAction(key){
+  if(!S) return;
+  const A = ACTIONS[key];
+  if(!A) return;
+  if(A.cost && S.energy < A.cost){ toast("Too tired — rest first."); return; }
+  if(A.money && S.money + A.money < 0){ toast("Not enough money."); return; }
+  A.run();
+  advanceDay();
+  renderAll();
+  autoSave(); // autosave after every action
+}
+
+const ACTIONS = {
+  pray:    {cost:0,  run(){ S.energy=Math.max(0,S.energy-4); S.faith+=3; S.peace+=2; S.streak++;
+            addLog("You prayed — honestly, unhurriedly.","good"); }},
+  scripture:{cost:5, run(){ S.knowledge+=4; S.faith+=1; S.streak++;
+            addLog("You opened the Scriptures. A phrase follows you all day.","good"); }},
+  worship: {cost:4, run(){ S.joy+=5; S.faith+=2; S.peace+=2; S.energy=Math.max(0,S.energy-4);
+            addLog("You put music on and worshipped while making breakfast.","good"); }},
+  work:    {cost:0, run(){
+            if(!S.job){ addLog("You have no job yet — apply in the Work tab.","bad"); return; }
+            const j = JOBS.find(x=>x.id===S.job);
+            S.energy = Math.max(0, S.energy - j.energy);
+            const wage = Math.round(j.salary/22);
+            S.money += wage; S.shifts++; S.totalEarned += wage;
+            // promote every 20 shifts + log on the career ladder
+            if(S.shifts>0 && S.shifts % 20 === 0){
+              JOBS.find(x=>x.id===S.job).salary = Math.round(JOBS.find(x=>x.id===S.job).salary*1.1);
+              const fresh = JOBS.find(x=>x.id===S.job);
+              // Update the current career-history entry to reflect promotion
+              const lastCareer = S.careerHistory[S.careerHistory.length-1];
+              if(lastCareer && lastCareer.jobId===S.job){
+                lastCareer.salary = fresh.salary;
+                lastCareer.promotedDay = S.day;
+              }
+              addLog("Promotion! Your salary rose 10% for steady, honest work.","good");
+            }
+            addLog("Worked a shift as " + j.title + ". Earned $" + wage + ".");
+            }},
+  study:   {cost:12, run(){ S.money-=0; S.energy=Math.max(0,S.energy-12); S.knowledge+=3;
+            addLog("You studied — a course book, a skill, a sharper mind.",""); }},
+  fellowship:{cost:6, run(){ S.community+=5; S.joy+=4; S.energy=Math.max(0,S.energy-6);
+            addLog("You spent the evening with church family. Laughter, tea, prayer.","good"); }},
+  serve:   {cost:14, run(){ S.serviceHours+=3; S.faith+=2; S.community+=3; S.joy+=2; S.energy=Math.max(0,S.energy-14);
+            addLog("You served — food bank, set-up team, someone's heavy lifting.","good"); }},
+  church:  {cost:8, run(){
+            if(!isSunday()){ addLog("It isn't Sunday — you stopped by the church anyway and sat in the quiet.","grace"); S.peace+=2; S.faith+=1; return; }
+            S.faith+=5; S.knowledge+=3; S.community+=4; S.joy+=3; S.energy=Math.max(0,S.energy-8);
+            addLog("Sunday worship at " + S.church + ". Word, songs, and peace.","good");
+            }},
+  rest:    {cost:0, run(){ S.energy=clamp(S.energy+30); S.health=clamp(S.health+5); S.joy=clamp(S.joy+1);
+            addLog("You rested. Even the Sabbath was made for man.",""); }},
+  exercise:{cost:10, run(){ S.energy=Math.max(0,S.energy-10); S.health=clamp(S.health+8); S.joy=clamp(S.joy+2);
+            addLog("You exercised — the body is also a temple worth tending.","good"); }},
+  tithe:   {cost:0, run(){
+            const amt = Math.max(10, Math.round(S.money*0.1));
+            S.money -= amt; S.faith+=4; S.joy+=2;
+            addLog("You gave $" + amt + " — to the church, to needs, to joy.","good");
+            }},
+  leisure: {cost:8, run(){ S.joy+=5; S.energy=Math.max(0,S.energy-8); S.health=Math.max(0,S.health-1);
+            addLog("You took leisure time — a film, a walk, a long call with a friend.",""); }}
+};
+
+const ACTION_UI = [
+  ["pray","🙏","Pray","+faith +peace"],
+  ["scripture","📖","Scripture","+knowledge +faith"],
+  ["worship","🎶","Worship","+joy +faith"],
+  ["church","⛪","Church","+faith +community"],
+  ["fellowship","🫂","Fellowship","+community +joy"],
+  ["serve","🤲","Serve","+faith +community"],
+  ["work","💼","Work shift","+money"],
+  ["study","🎓","Study","+knowledge"],
+  ["tithe","💝","Give 10%","+faith"],
+  ["exercise","🏃","Exercise","+health"],
+  ["leisure","☕","Leisure","+joy"],
+  ["rest","🛏️","Rest","+energy"]
+];
+
+function isSunday(){ return (S.day % 7) === 0; }
+
+function advanceDay(){
+  S.day++;
+  S.energy = clamp(S.energy + 4);
+  S.health = clamp(S.health + (S.energy>40 ? 1 : -1));
+  if(S.faith < 10 && Math.random()<0.35) S.joy = clamp(S.joy-2);
+  if(S.faith > 60) S.peace = clamp(S.peace+1);
+
+  // Age bumps +⅓ year every 122 in-game days so the family timeline ages organically
+  S.yearAge = Math.floor(S.day / 122);
+
+  const month = Math.floor(S.day/30);
+  if(month > S.lastMonth){
+    S.lastMonth = month;
+    monthTick();
+  }
+
+  // Story beats fire softly on each advance — not every day — based on conditions
+  // 5% chance per day once eligible for next family milestone
+  if(S.marriageProposed && !S.spouse && Math.random()<0.06) scheduleStoryEvents();
+  if(S.spouse && Math.random()<0.10) scheduleStoryEvents();
+
+  maybeEvent();
+  updateLocation();
+  renderAll();
+}
+
+function monthTick(){
+  const home = HOMES.find(h=>h.id===S.home);
+  let salary = 0;
+  if(S.job){
+    const j = JOBS.find(x=>x.id===S.job);
+    salary = j.salary;
+  }
+  S.money += salary - home.rent;
+  addLog("— New month — salary $" + salary + ", rent -$" + home.rent + " (net $" + (salary - home.rent) + ").", "");
+  if(S.money < 0){
+    addLog("Bills outpaced income. The numbers are red — a job change or simpler home may help.","bad");
+    S.joy = clamp(S.joy-5);
+  }
+  S.joy = clamp(S.joy + home.joy - 1);
+  S.peace = clamp(S.peace + 1);
+}
+
+/* ============ EVENTS ============ */
+function maybeEvent(){
+  if(S.energy < 0) S.energy = 0;
+  const chance = 0.45;
+  if(Math.random() > chance) return;
+  const pool = EVENTS.filter(e =>
+    !S.doneEventIds.includes(e.id) || e.repeatable);
+  if(!pool.length) return;
+  let ev = rnd(pool);
+  if(S.doneEventIds.includes(ev.id) && !ev.repeatable) return;
+  if(ev.fxOnly){
+    Object.keys(ev.fxOnly).forEach(k=>{
+      if(k==="days"){ S.energy=Math.max(0,S.energy-15); return; }
+      S[k] = clamp((S[k]||0)+ev.fxOnly[k]);
+    });
+    addLog(ev.title + ": " + ev.t + " (You rest through it.)","bad");
+    toast(ev.title);
+    return;
+  }
+  if(!S.doneEventIds.includes(ev.id)) S.doneEventIds.push(ev.id);
+  openEvent(ev);
+}
+
+function openEvent(ev){
+  const ov = $("overlay");
+  ov.innerHTML = `<div class="modal">
+      <span class="grab"></span>
+      <div class="tag">${ev.tag}</div>
+      <h3>${ev.title}</h3>
+      <p>${ev.t}</p>
+      <div class="choices">
+        ${ev.ch.map((c,i)=>`<button class="btn btn-ghost" onclick="choose('${ev.id}',${i})">${c.label}</button>`).join("")}
+      </div>
+    </div>`;
+  ov.classList.remove("hidden");
+  ov.dataset.ev = ev.id;
+}
+function choose(evId, i){
+  const ev = EVENTS.find(e=>e.id===evId);
+  const c = ev.ch[i];
+  const fx = c.fx || {};
+  Object.keys(fx).forEach(k=>{ S[k] = clamp((S[k]||0)+fx[k]); });
+  addLog(ev.title + " — " + c.res, (fx.faith>=3||fx.joy>=3) ? "good" : (fx.faith<0||fx.joy<0) ? "bad" : "");
+  if(fx.money && fx.money>0) addLog("+$" + fx.money, "good");
+  if(fx.money && fx.money<0) addLog("-$" + Math.abs(fx.money), "bad");
+  closeModal();
+  renderAll();
+  autoSave();
+}
+function closeModal(){ $("overlay").classList.add("hidden"); $("overlay").innerHTML=""; }
+
+/* ============ TABS & RENDERING ============ */
+function showTab(name){
+  ["work","home","people","walk","map","path"].forEach(t=>{
+    const el = $("tab-"+t);
+    if(el) el.classList.toggle("hidden", t!==name);
+    const tabEl = document.querySelector(`.tab[data-tab="${t}"]`);
+    if(tabEl) tabEl.classList.toggle("active", t===name);
+  });
+}
+function stage(){
+  let s = STAGES[0];
+  for(const st of STAGES) if(S.faith >= st.min) s = st;
+  return s.name;
+}
+
+function renderAll(){
+  if(!S) return;
+  $("h-name").textContent = S.name + (S.gender==="She" ? " ♀" : " ♂");
+  $("h-meta").textContent = `Day ${S.day} · Age ${S.age} · ${S.church}`;
+  const v = VERSES[(S.day-1) % VERSES.length];
+  $("verse-box").innerHTML = `“${v[0]}” — <b>${v[1]}</b>`;
+
+  const bars = [
+    ["Faith", S.faith, "var(--gold)"],
+    ["Joy", S.joy, "#c97a2b"],
+    ["Peace", S.peace, "#5a7d9a"],
+    ["Knowledge", S.knowledge, "var(--blue)"],
+    ["Community", S.community, "#8a6ea0"],
+    ["Health", S.health, "var(--green)"],
+    ["Energy", S.energy, "#777"]
+  ];
+  $("statbar").innerHTML = bars.map(b=>`
+    <div class="stat">
+      <div class="row"><span>${b[0]}</span><b>${Math.round(b[1])}</b></div>
+      <div class="bar"><i style="width:${clamp(b[1])}%; background:${b[2]}"></i></div>
+    </div>`).join("")
+    + `<div class="money-line"><span>💵 Money</span><span class="cash">$${Math.round(S.money)}</span></div>
+       <div class="money-line" style="border:none; padding-top:2px;">
+         <span>🕊️ Stage: <b>${stage()}</b> · Service: <b>${S.serviceHours}h</b>${isSunday()?' · <span class="pill">It\'s Sunday</span>':''}</span>
+         <span class="pill">Slot ${S.__activeSlot||'-'}</span>
+       </div>`;
+
+  $("actions").innerHTML = ACTION_UI.map(a=>{
+    const A = ACTIONS[a[0]];
+    const tired = A.cost && S.energy < A.cost;
+    const broke = a[0]==="tithe" && S.money < 10;
+    return `<button class="act" ${tired||broke?"disabled":""} onclick="doAction('${a[0]}')">
+      <span class="ic">${a[1]}</span><span class="body">${a[2]}<small>${a[3]}${A.cost?" · needs "+A.cost+" energy":""}${tired?" · too tired":""}</small></span>
+    </button>`;
+  }).join("");
+
+  const job = S.job ? JOBS.find(j=>j.id===S.job) : null;
+  $("tab-work").innerHTML = `
+    <p style="font-size:14px; margin-bottom:8px;">${job ? `You work as <b>${job.title}</b> — $${job.salary}/month · ${S.shifts} shifts worked (promotion every 20).` : "You are between jobs. Apply below; work shifts to earn daily wages and promotions."}</p>
+    <table><tr><th>Job</th><th>Salary</th><th>Energy</th><th></th></tr>
+    ${JOBS.map(j=>`<tr><td>${j.title}</td><td>$${j.salary}</td><td>${j.energy}</td>
+      <td>${S.job===j.id ? '<span class="pill">Current</span>' :
+        (j.minFaith && S.faith<j.minFaith) ? '<small>Needs faith '+j.minFaith+'</small>' :
+        `<button class="btn btn-gold btn-sm" onclick="applyJob('${j.id}')">Apply</button>`}</td></tr>`).join("")}
+    </table>`;
+
+  const home = HOMES.find(h=>h.id===S.home);
+  $("tab-home").innerHTML = `
+    <p style="font-size:14px; margin-bottom:8px;">You live in a <b>${home.name}</b> — rent $${home.rent}/month. A simpler home is easier on the budget; a better one lifts your spirits.</p>
+    <table><tr><th>Home</th><th>Rent</th><th>Mood bonus</th><th></th></tr>
+    ${HOMES.map(h=>`<tr><td>${h.name}</td><td>$${h.rent}</td><td>+${h.joy}</td>
+      <td>${S.home===h.id?'<span class="pill">Current</span>':`<button class="btn btn-ghost btn-sm" onclick="moveHome('${h.id}')">Move</button>`}</td></tr>`).join("")}
+    </table>`;
+
+  $("tab-people").innerHTML = `
+    <p style="font-size:14px; margin-bottom:8px;">Fellowship is where faith becomes family. Invest in it — and serve strangers too.</p>
+    <table>
+      <tr><th>Circle</th><th>Closeness</th><th></th></tr>
+      <tr><td>Church family</td><td>${barMini(S.community)}</td><td></td></tr>
+      <tr><td>Old friends</td><td>${barMini(clamp(S.community-15))}</td><td></td></tr>
+      <tr><td>Those you serve</td><td>${barMini(clamp(S.serviceHours))}</td><td></td></tr>
+    </table>
+    <p style="font-size:12px; color:var(--muted); margin-top:8px;">Fellowship & service actions grow these. Many events offer relationship choices.</p>`;
+
+  $("tab-walk").innerHTML = `
+    <p style="font-size:14px;">Your stage: <b>${stage()}</b></p>
+    <table style="margin-top:8px;">
+      <tr><th>Milestone</th><th>Stage</th></tr>
+      ${STAGES.map(st=>`<tr><td>${S.faith>=st.min?"✅":"⬜"}</td><td>${st.name} <small style="color:var(--muted)">(faith ${st.min}+)</small></td></tr>`).join("")}
+    </table>
+    <p style="font-size:13px; color:var(--muted); margin-top:10px; font-style:italic;">
+      There is no losing here. When faith runs low, grace is the whole game — every day is a fresh start.</p>`;
+
+  renderMap();
+  renderPath();
+
+  renderLog();
+}
+
+/* ============ MINI-MAP ============ */
+function renderMap(){
+  const el = $("tab-map"); if(!el) return;
+  const home = HOMES.find(h=>h.id===S.home);
+  const job = S.job ? JOBS.find(j=>j.id===S.job) : null;
+  const churchName = S.church;
+  const loc = S.location || "home";
+
+  // Layout coordinates on a 400x260 viewBox
+  const NODES = [
+    {id:"home",  x:90,  y:150, label: home.name,
+      sub:"Rent $" + home.rent + "/mo", colour:"#c9a227"},
+    {id:"church",x:250, y:60,  label: churchName.length > 18 ? churchName.slice(0,16)+"…" : churchName,
+      sub:"Worship · Fellowship", colour:"#2e4a7d"},
+    {id:"work",  x:340, y:200, label: job ? job.title : "Between jobs",
+      sub: job ? "$" + job.salary + "/mo" : "Apply in Work tab", colour:"#4c7a4c"},
+    {id:"family",x:60,  y:60,  label: familyLabel(),
+      sub: familySub(), colour:"#a04434"},
+    {id:"city",  x:340, y:80, label:"The City",
+      sub:"Service · Strangers", colour:"#8a6ea0"},
+    {id:"grace", x:200, y:140, label:"Grace",
+      sub:"Quiet & prayer", colour:"#5a7d9a"},
+  ];
+
+  // Build path lines between selected nodes (subtle)
+  const lines = [
+    ["home","church"],["home","work"],["church","work"],
+    ["home","family"],["church","grace"],["work","city"]
+  ];
+  const nodeById = Object.fromEntries(NODES.map(n=>[n.id,n]));
+  const linesSvg = lines.map(([a,b])=>{
+    const A = nodeById[a], B = nodeById[b];
+    if(!A||!B) return "";
+    return `<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" stroke="#e8d9a0" stroke-width="2" stroke-dasharray="3 4" opacity="0.7"/>`;
+  }).join("");
+
+  // Nodes, with current location highlighted
+  const nodesSvg = NODES.map(n=>{
+    const isHere = (loc === n.id) || (loc === "fellowship" && n.id==="church") || (loc === "out" && n.id==="city");
+    return `<g>
+      <circle cx="${n.x}" cy="${n.y}" r="${isHere?22:16}" fill="${n.colour}" opacity="${isHere?0.95:0.85}"/>
+      ${isHere?`<circle cx="${n.x}" cy="${n.y}" r="28" fill="none" stroke="${n.colour}" stroke-width="2" opacity="0.45"><animate attributeName="r" from="22" to="34" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" from="0.45" to="0" dur="1.6s" repeatCount="indefinite"/></circle>`:``}
+      <text x="${n.x}" y="${n.y+4}" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">${iconFor(n.id)}</text>
+      <text x="${n.x}" y="${n.y+38}" text-anchor="middle" fill="#2b2a26" font-size="11" font-weight="600">${escapeHtml(n.label)}</text>
+      <text x="${n.x}" y="${n.y+52}" text-anchor="middle" fill="#7a756a" font-size="9">${escapeHtml(n.sub)}</text>
+    </g>`;
+  }).join("");
+
+  // Mini compass / title
+  const svg = `
+    <svg class="map-svg" viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bgGrad" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stop-color="#fffdf8"/>
+          <stop offset="100%" stop-color="#ece2c4"/>
+        </radialGradient>
+      </defs>
+      <rect x="0" y="0" width="400" height="260" fill="url(#bgGrad)"/>
+      <!-- decorative roads -->
+      <path d="M 20 220 Q 100 200 200 180 T 380 200" stroke="#d7c89a" stroke-width="6" fill="none" opacity="0.55"/>
+      <path d="M 30 100 Q 150 130 250 80 T 380 130" stroke="#d7c89a" stroke-width="5" fill="none" opacity="0.45"/>
+      ${linesSvg}
+      ${nodesSvg}
+      <g transform="translate(370,25)" opacity="0.75">
+        <polygon points="0,-12 4,0 0,12 -4,0" fill="#c04434"/>
+        <text x="0" y="-16" text-anchor="middle" font-size="9" fill="#7a756a">N</text>
+      </g>
+    </svg>`;
+
+  const locLabel = ({home:"🏠 At home", church:"⛪ At church", work:"💼 At work",
+                     fellowship:"🫂 In fellowship", out:"🌆 In the city"})[loc] || "🏠 At home";
+
+  el.innerHTML = `
+    <div class="map-loc"><b>You are here:</b> ${locLabel}<br><small>${describeLocation(loc)}</small></div>
+    <div class="map-wrap">${svg}</div>
+    <div class="map-legend">
+      <span><i style="background:#c9a227"></i>${escapeHtml(home.name)}</span>
+      <span><i style="background:#2e4a7d"></i>${escapeHtml(churchName)}</span>
+      <span><i style="background:#4c7a4c"></i>${job ? escapeHtml(job.title) : "Unemployed"}</span>
+      <span><i style="background:#a04434"></i>${familyLabel()}</span>
+      <span><i style="background:#8a6ea0"></i>City & Service</span>
+      <span><i style="background:#5a7d9a"></i>Quiet moments</span>
+    </div>
+    <p style="font-size:12px; color:var(--muted); margin-top:8px; font-style:italic;">
+      Your location shifts with what you do — praying puts you in the "Grace" cloud, work at the office,
+      cooking dinner at home, the food bank or bus stop out in the city.</p>
+  `;
+}
+function iconFor(id){return ({home:"🏠",church:"⛪",work:"💼",family:"❤",city:"🏙️",grace:"🕊️"})[id]||"•";}
+function familyLabel(){
+  if(!S) return "Family";
+  if(!S.spouse && S.children.length===0) return "Family (future)";
+  if(S.spouse && S.children.length===0) return "Wedding plans";
+  return "Family · " + S.spouse.name + (S.children.length?(" +"+S.children.length):"");
+}
+function familySub(){
+  if(!S) return "Meeting, marriage, children";
+  if(!S.spouse && S.children.length===0){
+    if(S.marriageProposed){
+      const left = Math.max(0, 14 - (S.day - (S.familyMeetingDay||S.day)));
+      return "Engaged · " + left + " days to wedding";
+    }
+    return "Need faith 60+, friends, savings";
+  }
+  if(S.spouse && S.children.length===0){
+    return "Married " + (S.day - S.spouse.sinceDay) + " days · praying for a child";
+  }
+  return S.spouse.name + " + " + S.children.length + " children";
+}
+function describeLocation(l){
+  return ({
+    home:"Applying for jobs, reading the Word, cooking dinner, paying rent.",
+    church:"Sermon, small group, communion, prayer with people.",
+    work:"Tables, charts, customers, code, instruments — the daily wage.",
+    fellowship:"Coffee, meals, listening, mentoring, being mentored.",
+    out:"Food bank, bus stop, neighbour's porch, the city."
+  })[l] || "";
+}
+
+/* ============ PROGRESSION SCREEN ============ */
+function renderPath(){
+  const el = $("tab-path"); if(!el) return;
+  const job = S.job ? JOBS.find(j=>j.id===S.job) : null;
+  const home = HOMES.find(h=>h.id===S.home);
+
+  // Career ladder — chronological history with current pinned
+  const careerItems = (S.careerHistory||[]).slice().sort((a,b)=>a.hiredDay-b.hiredDay);
+  const careerHtml = careerItems.length === 0
+    ? `<p style="font-size:13px; color:var(--muted); font-style:italic;">Apply for a job to begin your career ladder.</p>`
+    : `<div class="timeline">${careerItems.map(c=>{
+        const isCurrent = c.jobId===S.job;
+        return `<div class="tl-item ${isCurrent?'current':''}">
+          <b>${escapeHtml(c.title)}</b><small>From day ${c.hiredDay} · $${c.salary}/mo${c.promotedDay?" · promoted day "+c.promotedDay:""}</small>
+        </div>`;
+      }).join("")}
+       <div class="tl-item future">⟶ Next steps: skills, further study, leadership</div>
+      </div>`;
+
+  // Family timeline
+  let familyHtml;
+  if(!S.spouse && S.children.length===0 && !S.marriageProposed){
+    const ready = S.faith>=60 && S.community>=35 && S.money>=1500;
+    familyHtml = `<div class="fam-empty">
+      No family yet. ${ready
+        ? "You meet the conditions — a quiet conversation is brewing." 
+        : "When your faith is steady, your circle is warm, and your savings honest, life tends to surprise you."}
+    </div>`;
+  } else {
+    const items = [];
+    if(S.marriageProposed && S.spouse){
+      items.push(`<div class="tl-item current"><b>Married ${escapeHtml(S.spouse.name)}</b><small>Day ${S.spouse.sinceDay}</small></div>`);
+    } else if(S.marriageProposed){
+      items.push(`<div class="tl-item current"><b>Engaged</b><small>Day ${S.familyMeetingDay}</small></div>`);
+    }
+    S.children.forEach((ch,i)=>{
+      items.push(`<div class="tl-item ${i===S.children.length-1?'current':''}"><b>${escapeHtml(ch.name)}</b> — ${ch.gender}<small>Born day ${ch.bornDay} · now ~${childAgeYears(ch.bornDay)}</small></div>`);
+    });
+    familyHtml = `<div class="timeline">${items.join("")}</div>${childrenCardsHtml()}`;
+  }
+
+  // Education summary
+  const eduHtml = `<table style="font-size:13px;">
+    <tr><td>Current</td><td><b>${escapeHtml(S.education||"None")}</b></td></tr>
+    <tr><td>Knowledge stat</td><td>${Math.round(S.knowledge)}</td></tr>
+    <tr><td>Life Faith stage</td><td>${stage()}</td></tr>
+    <tr><td>Service hours</td><td>${S.serviceHours}h</td></tr>
+    <tr><td>Shifts worked (current role)</td><td>${S.shifts}</td></tr>
+    <tr><td>Lifetime earnings</td><td>$${Math.round(S.totalEarned||0)}</td></tr>
+  </table>
+  <div class="badge-row">
+    <span class="badge">Day ${S.day}</span>
+    <span class="badge">Age ${S.age + Math.floor(S.yearAge/3)}</span>
+    <span class="badge gold">Slot ${S.__activeSlot||"–"}</span>
+  </div>`;
+
+  el.innerHTML = `
+    <div class="path-grid">
+      <div class="path-card">
+        <h3>💼 Career</h3>
+        ${careerHtml}
+        <p style="font-size:12px; color:var(--muted); margin-top:8px;">
+          Each job leaves a rung on the ladder. Promotions every 20 honest shifts.
+          ${job ? "You're on <b>" + escapeHtml(job.title) + "</b>." : "Apply in the Work tab to begin."}
+        </p>
+      </div>
+      <div class="path-card">
+        <h3>👨‍👩‍👧 Family</h3>
+        ${familyHtml}
+      </div>
+      <div class="path-card" style="grid-column:1/-1;">
+        <h3>🎓 Life & Growth</h3>
+        ${eduHtml}
+      </div>
+    </div>`;
+}
+function childAgeYears(bornDay){
+  const yrs = Math.max(0, Math.floor((S.day - bornDay) / 122));
+  if(yrs < 1) return (Math.round((S.day-bornDay)/30)) + "mo";
+  return yrs + " yr";
+}
+function childrenCardsHtml(){
+  if(!S.children.length) return "";
+  return `<div style="margin-top:6px;">` + S.children.map(ch=>{
+    const av = ch.gender==="daughter" ? "👧" : "👦";
+    return `<div class="child-card">
+      <span class="avatar">${av}</span>
+      <span class="who"><b>${escapeHtml(ch.name)}</b><small>${ch.gender} · ${childAgeYears(ch.bornDay)}</small></span>
+    </div>`;
+  }).join("") + "</div>";
+}
+function barMini(v){
+  return `<span style="display:inline-block; width:80px; height:8px; background:var(--blue-soft); border-radius:6px; overflow:hidden; vertical-align:middle;">
+    <i style="display:block; height:100%; width:${clamp(v)}%; background:var(--blue);"></i></span> ${Math.round(v)}`;
+}
+
+function applyJob(id){
+  const j = JOBS.find(x=>x.id===id);
+  if(j.minFaith && S.faith < j.minFaith){ toast("This role needs a deeper walk (faith " + j.minFaith + ")."); return; }
+  // Record career history — keeps a ladder even if you switch jobs later
+  if(!S.careerHistory.some(c=>c.jobId===id)){
+    S.careerHistory.push({jobId:id, title:j.title, salary:j.salary, hiredDay: S.day});
+  } else {
+    // re-entering after a gap — refresh the hired date
+    const idx = S.careerHistory.findIndex(c=>c.jobId===id);
+    S.careerHistory[idx].hiredDay = S.day;
+  }
+  S.job = id; S.shifts = 0;
+  addLog("You were hired as " + j.title + ". New mercies, new payslips.","good");
+  renderAll(); autoSave();
+}
+function moveHome(id){
+  const h = HOMES.find(x=>x.id===id);
+  S.home = id;
+  addLog("You moved to a " + h.name.toLowerCase() + ". Boxes, new light, home again.","");
+  renderAll(); autoSave();
+}
+
+/* ============ LOG & TOAST ============ */
+function addLog(text, cls){
+  if(!S) return;
+  S.log.unshift({d:S.day, t:text, c:cls||""});
+  if(S.log.length>200) S.log.pop();
+}
+function renderLog(){
+  $("log").innerHTML = S.log.map(l=>`<p class="${l.c}"><span class="day">Day ${l.d} — </span>${l.t}</p>`).join("");
+}
+function toast(msg){
+  const t = document.createElement("div");
+  t.className="toast"; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2400);
+}
+
+/* ============ STARTUP ============ */
+// On first load: detect saves and route to either new-game or saves view
+(function init(){
+  // Demo mode (#demo) — instant-preview a fully-built life so the Map + Path
+  // tabs can be inspected without playing through. The demo state is saved to
+  // slot 3 if it's empty, otherwise generated in-memory only.
+  if(location.hash === "#demo"){
+    S = ensureV12(newState("Grace Adeyemi","She","Grace Community Church","new"));
+    S.day = 240; S.job="nurse"; S.shifts = 168; S.money = 4820; S.faith = 72;
+    S.joy = 70; S.peace = 64; S.knowledge = 38; S.community = 56;
+    S.serviceHours = 32; S.home = "oneb";
+    S.careerHistory = [
+      {jobId:"barista", title:"Café Barista", salary:1680, hiredDay:1, promotedDay:30},
+      {jobId:"teacher", title:"Teaching Assistant", salary:2300, hiredDay:60},
+      {jobId:"nurse",   title:"Nurse", salary:3520, hiredDay:120, promotedDay:170},
+      {jobId:"dev",     title:"Junior Developer (side)", salary:1200, hiredDay:200}
+    ];
+    S.spouse = {name:"Daniel", sinceDay:140};
+    S.children = [
+      {name:"Hope", bornDay:200, gender:"daughter"},
+      {name:"Peace", bornDay:300, gender:"daughter"}
+    ];
+    S.totalEarned = 31200;
+    const free = lsGet(SAVE_PREFIX+"slot3") ? null : 3;
+    if(free){ writeToSlot(S, free); S.__activeSlot = free; }
+    $("title-screen").classList.add("hidden");
+    $("game").classList.remove("hidden");
+    renderAll();
+    toast("Demo loaded — try the Map and Path tabs");
+    return;
+  }
+  // restore from rollback: nothing to do besides choosing the right view
+  const saves = listSaves();
+  if(!HAS_LS){
+    setTimeout(()=>toast("Browser storage unavailable — use Export to back up"), 600);
+  }
+})();
+window.addEventListener("beforeunload", ()=>{ if(S) autoSave(); });
+
+/* ============ TEST HARNESS (used in dev) ============ */
+function __devSelfTest(){
+  // Used internally to verify save/load round-trip.
+  const original = JSON.parse(JSON.stringify(S || newState("Test","She","Grace Community Church","seeker")));
+  const testState = JSON.parse(JSON.stringify(original));
+  // simulate save
+  writeToSlot(testState, 1);
+  // simulate load
+  const loaded = readFromSlot(1);
+  const ok = JSON.stringify(loaded) === JSON.stringify(original)
+    || JSON.stringify({...loaded, __activeSlot:undefined}) === JSON.stringify({...original, __activeSlot:undefined});
+  // cleanup
+  lsRemove(SAVE_PREFIX + "slot1");
+  return ok;
+}
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
